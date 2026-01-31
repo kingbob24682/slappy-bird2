@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Slappy Bird</title>
+<style>
+  body {
+    margin: 0;
+    background: #70c5ce;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+  }
+  canvas {
+    border: 3px solid #000;
+    background: #70c5ce;
+  }
+  .overlay {
+    position: absolute;
+    text-align: center;
+    color: white;
+  }
+  button {
+    padding: 10px 20px;
+    font-size: 18px;
+    cursor: pointer;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="overlay" id="menu">
+  <h1>🐦 Slappy Bird</h1>
+  <button onclick="startGame()">Start Game</button>
+  <p>High Score: <span id="best">0</span></p>
+</div>
+
+<canvas id="game" width="400" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const menu = document.getElementById("menu");
+
+let running = false;
+let gameOver = false;
+let frame = 0;
+let score = 0;
+let bestScore = localStorage.getItem("bestScore") || 0;
+document.getElementById("best").innerText = bestScore;
+
+// Sounds
+const flapSound = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQgAAAAA");
+const hitSound  = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQgAAAAA");
+
+// Bird
+const bird = {
+  x: 80,
+  y: 250,
+  r: 18,
+  gravity: 0.4,
+  lift: -7,
+  v: 0,
+  draw() {
+    ctx.font = "30px Arial";
+    ctx.fillText("🐤", this.x - 15, this.y + 15);
+  },
+  update() {
+    this.v += this.gravity;
+    this.y += this.v;
+    if (this.y + this.r > canvas.height) endGame();
+    if (this.y < 0) { this.y = 0; this.v = 0; }
+  },
+  slap() {
+    this.v = this.lift;
+    flapSound.play();
+  }
+};
+
+// Pipes
+const pipes = [];
+const gap = 150;
+const speed = 2.5;
+
+function newPipe() {
+  const top = Math.random() * 250 + 50;
+  pipes.push({
+    x: canvas.width,
+    top: top,
+    bottom: canvas.height - top - gap,
+    passed: false
+  });
+}
+
+function updatePipes() {
+  pipes.forEach(p => {
+    p.x -= speed;
+
+    // Collision
+    if (
+      bird.x + bird.r > p.x &&
+      bird.x - bird.r < p.x + 60 &&
+      (bird.y - bird.r < p.top ||
+       bird.y + bird.r > canvas.height - p.bottom)
+    ) {
+      endGame();
+    }
+
+    // Score
+    if (!p.passed && p.x + 60 < bird.x) {
+      score++;
+      p.passed = true;
+    }
+  });
+
+  if (pipes.length && pipes[0].x + 60 < 0) pipes.shift();
+  if (frame % 100 === 0) newPipe();
+}
+
+function drawPipes() {
+  ctx.fillStyle = "green";
+  pipes.forEach(p => {
+    ctx.fillRect(p.x, 0, 60, p.top);
+    ctx.fillRect(p.x, canvas.height - p.bottom, 60, p.bottom);
+  });
+}
+
+function drawScore() {
+  ctx.fillStyle = "#fff";
+  ctx.font = "24px Arial";
+  ctx.fillText("Score: " + score, 10, 30);
+}
+
+function endGame() {
+  if (!gameOver) {
+    hitSound.play();
+    gameOver = true;
+    running = false;
+    if (score > bestScore) {
+      bestScore = score;
+      localStorage.setItem("bestScore", bestScore);
+    }
+    menu.style.display = "block";
+    menu.innerHTML = `
+      <h1>Game Over 💥</h1>
+      <p>Score: ${score}</p>
+      <p>High Score: ${bestScore}</p>
+      <button onclick="startGame()">Restart</button>
+    `;
+  }
+}
+
+function loop() {
+  if (!running) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  bird.update();
+  bird.draw();
+  updatePipes();
+  drawPipes();
+  drawScore();
+
+  frame++;
+  requestAnimationFrame(loop);
+}
+
+function startGame() {
+  menu.style.display = "none";
+  pipes.length = 0;
+  bird.y = 250;
+  bird.v = 0;
+  score = 0;
+  frame = 0;
+  gameOver = false;
+  running = true;
+  loop();
+}
+
+// Controls (PC + Mobile)
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" && running) bird.slap();
+});
+canvas.addEventListener("click", () => running && bird.slap());
+canvas.addEventListener("touchstart", e => {
+  e.preventDefault();
+  running && bird.slap();
+});
+</script>
+
+</body>
+</html>
