@@ -192,3 +192,56 @@ canvas.addEventListener("touchstart", e => {
 
 </body>
 </html>
+<div class="overlay" id="menu">
+  <h1>🐦 Slappy Bird</h1>
+  <p>Select Mode:</p>
+  <button onclick="startGame('easy')">Easy</button>
+  <button onclick="startGame('classic')">Classic</button>
+  <button onclick="startGame('hard')">Hard</button>
+  <button onclick="startGame('survival')">Endless</button>
+  <p>High Score: <span id="best">0</span></p>
+</div>
+function startGame(mode){
+  gameMode = mode;
+  menu.style.display = "none";
+
+  // Reset variables
+  pipes.length = 0;
+  bird.y = 250;
+  bird.v = 0;
+  score = 0;
+  frame = 0;
+  gameOver = false;
+  running = true;
+
+  // Mode-specific settings
+  if(gameMode === "easy"){
+    pipeSpeed = 1.5;   // slower pipes
+    pipeGap = 200;     // bigger gap
+    bird.gravity = 0.3; // slower fall
+    bird.lift = -6;    // lighter flap
+  } else if(gameMode === "classic"){
+    pipeSpeed = 2.5;
+    pipeGap = 150;
+    bird.gravity = 0.4;
+    bird.lift = -7;
+  } else if(gameMode === "hard"){
+    pipeSpeed = 4;
+    pipeGap = 120;
+    bird.gravity = 0.5;
+    bird.lift = -7;
+  } else if(gameMode === "survival"){
+    pipeSpeed = 2.5;
+    pipeGap = 150;
+    bird.gravity = 0.4;
+    bird.lift = -7;
+  }
+
+  loop();
+}
+function drawScore(){
+  ctx.fillStyle = "#fff";
+  ctx.font = "24px Arial";
+  ctx.fillText("Score: " + score, 10, 30);
+  ctx.fillText("Mode: " + gameMode.charAt(0).toUpperCase() + gameMode.slice(1), 10, 60);
+}
